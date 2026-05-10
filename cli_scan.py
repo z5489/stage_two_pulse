@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from stock_engine import scan_stocks
 
 def run_job():
-    os.makedirs("results", exist_ok=True)
+    os.makedirs("antigravity-dashboard/public/results", exist_ok=True)
     
     symbols = []
     if os.path.exists("tickers.json"):
@@ -24,7 +24,7 @@ def run_job():
     scan_stocks(symbols, progress_callback=handle_step)
     
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    output = os.path.join("results", f"trend_template_results_{stamp}.csv")
+    output = os.path.join("antigravity-dashboard/public/results", f"trend_template_results_{stamp}.csv")
     
     df = pd.DataFrame(buffer)
     if 'points' in df.columns:

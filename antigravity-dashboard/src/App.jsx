@@ -33,9 +33,12 @@ function App() {
   useEffect(() => {
     const bootstrap = async () => {
       const dates = await syncHistory();
-      const meta = await fetch(`${API_ENDPOINT}/current_config`).then(r => r.json()).catch(() => ({}));
       
-      // Prefer the calculated target date, but fallback to the latest available file
+      let meta = {};
+      if (API_ENDPOINT) {
+        meta = await fetch(`${API_ENDPOINT}/current_config`).then(r => r.json()).catch(() => ({}));
+      }
+      
       const start = (dates && dates.includes(meta.target_date)) 
         ? meta.target_date 
         : (dates?.[0] || meta.target_date || new Date().toISOString().split('T')[0]);
@@ -114,9 +117,9 @@ function App() {
 
   const fetchStatic = async (date) => {
     try {
-      const raw = await fetch(`./results/trend_template_results_${date}.csv`).then(r => r.text());
+      const raw = await fetch(`/results/trend_template_results_${date}.csv`).then(r => r.text());
       const [head, ...body] = raw.split('\n').filter(l => l.trim());
-      const cols = head.split(',');
+      const cols = head.map(c => c.trim().toLowerCase());
       
       const rows = body.map(line => {
         const vals = line.split(',');
@@ -153,8 +156,8 @@ function App() {
 
   const filtered = useMemo(() => {
     return data
-      .filter(s => s.ticker.toLowerCase().includes(query.toLowerCase()))
-      .sort((a, b) => b.score - a.score);
+      .filter(s => s && s.ticker && s.ticker.toLowerCase().includes(query.toLowerCase()))
+      .sort((a, b) => (b.score || 0) - (a.score || 0));
   }, [data, query]);
 
   const activeScan = progress.current > 0 && progress.current < progress.total;

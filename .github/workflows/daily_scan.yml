@@ -33,6 +33,6 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add results/
+          git add antigravity-dashboard/public/results/
           git commit -m "data: update results $(date +'%Y-%m-%d')" || exit 0
           git push

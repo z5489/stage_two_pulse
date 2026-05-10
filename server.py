@@ -12,7 +12,7 @@ from stock_engine import scan_stocks
 app = Flask(__name__)
 CORS(app)
 
-DATA_PATH = "results"
+DATA_PATH = "antigravity-dashboard/public/results"
 os.makedirs(DATA_PATH, exist_ok=True)
 
 state = {
