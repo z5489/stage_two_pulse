@@ -50,14 +50,14 @@ function App() {
   }, []);
 
   const syncHistory = async () => {
-    if (!API_ENDPOINT) return [];
     try {
-      const res = await fetch(`${API_ENDPOINT}/history`);
+      const url = API_ENDPOINT ? `${API_ENDPOINT}/history` : '/results/history.json';
+      const res = await fetch(url);
       const { dates } = await res.json();
       setHistory(dates || []);
       return dates;
     } catch (e) {
-      console.debug("API history check skipped");
+      console.debug("History discovery failed");
       return [];
     }
   };

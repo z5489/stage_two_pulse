@@ -31,7 +31,15 @@ def run_job():
         df['points'] = df['points'].apply(str)
     
     df.to_csv(output, index=False)
+    
+    # Generate history.json for serverless discovery
+    files = [f for f in os.listdir(DATA_PATH) if f.endswith('.csv')]
+    dates = sorted([f.split('_')[-1].replace('.csv', '') for f in files], reverse=True)
+    with open(os.path.join(DATA_PATH, 'history.json'), 'w') as f:
+        json.dump({"dates": dates}, f)
+        
     print(f"Sync completed: {output} ({len(buffer)} records)")
+    print(f"History updated: {len(dates)} dates indexed")
 
 if __name__ == "__main__":
     run_job()
