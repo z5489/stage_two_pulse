@@ -1,0 +1,38 @@
+name: production-market-sync
+
+on:
+  schedule:
+    - cron: '0 22 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: source-checkout
+        uses: actions/checkout@v4
+
+      - name: python-setup
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: install-deps
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: run-sync
+        run: python cli_scan.py
+
+      - name: push-results
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add results/
+          git commit -m "data: update results $(date +'%Y-%m-%d')" || exit 0
+          git push
