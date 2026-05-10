@@ -19,7 +19,8 @@ const RULES = [
   { id: 9, label: "P > 1m", title: "Price > 1-month-ago Price" }
 ];
 
-const API_ENDPOINT = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const IS_LOCAL = window.location.hostname === 'localhost';
+const API_ENDPOINT = import.meta.env.VITE_API_URL || (IS_LOCAL ? 'http://localhost:5000/api' : null);
 
 function App() {
   const [data, setData] = useState([]);
@@ -46,6 +47,7 @@ function App() {
   }, []);
 
   const syncHistory = async () => {
+    if (!API_ENDPOINT) return [];
     try {
       const res = await fetch(`${API_ENDPOINT}/history`);
       const { dates } = await res.json();
@@ -80,31 +82,34 @@ function App() {
     const target = date || currentDate;
     setViewState({ loading: true, label: `Syncing ${target}` });
     
-    try {
-      const res = await fetch(`${API_ENDPOINT}/load_csv`, { 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: target })
-      });
-      
-      if (res.ok) {
-        const payload = await res.json();
-        setData(payload.data || []);
-        setProgress({ current: payload.count, total: payload.count });
-        setCurrentDate(payload.date);
-        setViewState({ loading: false, label: `Viewing ${target}` });
-        return;
-      }
+    if (API_ENDPOINT) {
+      try {
+        const res = await fetch(`${API_ENDPOINT}/load_csv`, { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date: target })
+        });
+        
+        if (res.ok) {
+          const payload = await res.json();
+          setData(payload.data || []);
+          setProgress({ current: payload.count, total: payload.count });
+          setCurrentDate(payload.date);
+          setViewState({ loading: false, label: `Viewing ${target}` });
+          return;
+        }
 
-      if (res.status === 404) {
-        const context = await res.json();
-        if (context.is_future) return executeScan();
+        if (res.status === 404) {
+          const context = await res.json();
+          if (context.is_future) return executeScan();
+        }
+      } catch (e) {
+        console.debug("Local API fetch failed");
       }
-    } catch (e) {
-      await fetchStatic(target);
-    } finally {
-      setViewState(v => ({ ...v, loading: false }));
     }
+
+    await fetchStatic(target);
+    setViewState(v => ({ ...v, loading: false }));
   };
 
   const fetchStatic = async (date) => {
