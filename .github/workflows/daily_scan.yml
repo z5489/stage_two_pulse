@@ -2,11 +2,26 @@ name: production-market-sync
 
 on:
   schedule:
-    - cron: '0 22 * * 1-5'
+    - cron: '0 22 * * 1-5'    # 22:00 UTC / 10:00 PM (Group 1)
+    - cron: '30 22 * * 1-5'   # 22:30 UTC / 10:30 PM (Group 2)
+    - cron: '0 23 * * 1-5'    # 23:00 UTC / 11:00 PM (Group 3)
   workflow_dispatch:
+    inputs:
+      group:
+        description: 'Which ticker group to scan manually?'
+        required: true
+        type: choice
+        options:
+          - '1'
+          - '2'
+          - '3'
+        default: '1'
 
 jobs:
-  sync:
+  sync-group-1:
+    if: |
+      (github.event_name == 'schedule' && github.event.schedule == '0 22 * * 1-5') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.group == '1')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -27,12 +42,81 @@ jobs:
           pip install -r requirements.txt
 
       - name: run-sync
-        run: python cli_scan.py
+        run: python cli_scan.py tickers_group_1.json
 
       - name: push-results
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add antigravity-dashboard/public/results/
-          git commit -m "data: update results $(date +'%Y-%m-%d')" || exit 0
+          git commit -m "data: update group 1 results $(date +'%Y-%m-%d')" || exit 0
           git push
+
+  sync-group-2:
+    if: |
+      (github.event_name == 'schedule' && github.event.schedule == '30 22 * * 1-5') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.group == '2')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: source-checkout
+        uses: actions/checkout@v4
+
+      - name: python-setup
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: install-deps
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: run-sync
+        run: python cli_scan.py tickers_group_2.json
+
+      - name: push-results
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add antigravity-dashboard/public/results/
+          git commit -m "data: update group 2 results $(date +'%Y-%m-%d')" || exit 0
+          git push
+
+  sync-group-3:
+    if: |
+      (github.event_name == 'schedule' && github.event.schedule == '0 23 * * 1-5') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.group == '3')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: source-checkout
+        uses: actions/checkout@v4
+
+      - name: python-setup
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: install-deps
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: run-sync
+        run: python cli_scan.py tickers_group_3.json
+
+      - name: push-results
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add antigravity-dashboard/public/results/
+          git commit -m "data: update group 3 results $(date +'%Y-%m-%d')" || exit 0
+          git push
+

@@ -118,15 +118,41 @@ function App() {
   const fetchStatic = async (date) => {
     try {
       const raw = await fetch(`/results/trend_template_results_${date}.csv`).then(r => r.text());
-      const [head, ...body] = raw.split('\n').filter(l => l.trim());
-      const cols = head.map(c => c.trim().toLowerCase());
+      const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+      if (!lines.length) return;
       
-      const rows = body.map(line => {
-        const vals = line.split(',');
+      const head = lines[0];
+      const cols = head.split(',').map(c => c.trim().toLowerCase());
+      
+      const rows = lines.slice(1).map(line => {
+        const vals = [];
+        let current = '';
+        let inQuotes = false;
+        for (let j = 0; j < line.length; j++) {
+          const char = line[j];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            vals.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        vals.push(current.trim());
+
         return cols.reduce((acc, col, i) => {
-          let v = vals[i];
+          let v = vals[i] || '';
           if (col === 'points') {
-            try { acc[col] = JSON.parse(v.replace(/'/g, '"')); } catch { acc[col] = v; }
+            try { 
+              let cleanVal = v;
+              if (cleanVal.startsWith('"') && cleanVal.endsWith('"')) {
+                cleanVal = cleanVal.slice(1, -1);
+              }
+              acc[col] = JSON.parse(cleanVal.replace(/'/g, '"')); 
+            } catch { 
+              acc[col] = v; 
+            }
           } else if (['price', 'score'].includes(col)) {
             acc[col] = parseFloat(v);
           } else {
@@ -139,6 +165,7 @@ function App() {
       setData(rows);
       setCurrentDate(date);
     } catch (e) {
+      console.error("Static CSV parsing failed:", e);
       setData([]);
     }
   };

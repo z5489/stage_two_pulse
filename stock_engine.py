@@ -74,17 +74,18 @@ import random
 
 def fetch_ticker_data(ticker):
     retries = 3
-    delay = 2
+    delay = 5 # Start with a longer delay
     
     for attempt in range(retries):
         try:
             # Add small random jitter to avoid burst patterns
-            time.sleep(random.uniform(0.1, 0.5))
+            time.sleep(random.uniform(0.5, 1.5))
             
             stock = yf.Ticker(ticker)
-            hist = stock.history(period="14mo")
+            # Use a slightly smaller period to reduce data transfer
+            hist = stock.history(period="1y")
             
-            if hist.empty or len(hist) < 200:
+            if hist.empty or len(hist) < 150:
                 return None
             
             prices = hist['Close'].tolist()
@@ -102,12 +103,12 @@ def fetch_ticker_data(ticker):
             }
         except Exception as e:
             err_msg = str(e).lower()
-            if "rate limit" in err_msg or "too many requests" in err_msg:
-                print(f"Rate limited on {ticker}. Retrying in {delay}s... (Attempt {attempt+1}/{retries})")
+            # Catch common rate limit or malformed response errors
+            if any(key in err_msg for key in ["rate limit", "too many requests", "expecting value", "http error 429"]):
+                print(f"Throttled on {ticker}. Waiting {delay}s... (Attempt {attempt+1}/{retries})")
                 time.sleep(delay)
-                delay *= 2 # Exponential backoff
+                delay *= 2 
             else:
-                # Other errors (e.g. invalid ticker) return None immediately
                 return None
     return None
 
@@ -115,8 +116,10 @@ def scan_stocks(tickers, progress_callback=None):
     results = []
     total = len(tickers)
     
-    # Reduced workers to avoid aggressive rate limiting
-    with ThreadPoolExecutor(max_workers=50) as executor:
+    # Dramatically reduced workers to stay under Yahoo's radar
+    # and added a cooldown every 100 tickers
+    batch_size = 100
+    with ThreadPoolExecutor(max_workers=10) as executor:
         for i, ticker_data in enumerate(executor.map(fetch_ticker_data, tickers)):
             score_data = None
             if ticker_data:
@@ -125,5 +128,9 @@ def scan_stocks(tickers, progress_callback=None):
             
             if progress_callback:
                 progress_callback(i + 1, total, score_data)
+            
+            # Cooldown every 100 tickers to prevent rate limit build-up
+            if (i + 1) % batch_size == 0:
+                time.sleep(5)
                 
     return results
