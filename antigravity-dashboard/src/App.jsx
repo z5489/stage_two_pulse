@@ -231,9 +231,6 @@ function App() {
               {!history.includes(currentDate) && <option value={currentDate}>{currentDate}</option>}
             </select>
           </div>
-          <button className="btn-secondary" onClick={() => fetchResults()}>
-            <RefreshCw size={18} className={viewState.loading ? 'animate-spin' : ''} />
-          </button>
           <button className="btn-primary" onClick={exportSpreadsheet} disabled={!data.length}>
             <Download size={18} />
           </button>
