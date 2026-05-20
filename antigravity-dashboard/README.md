@@ -1,4 +1,4 @@
-# Antigravity Dashboard
+# Dashboard
 
 A high-performance React dashboard for visualizing Minervini Trend Template stock scans.
 

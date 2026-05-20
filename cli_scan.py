@@ -5,7 +5,7 @@ import pandas as pd
 from datetime import datetime, timezone
 from stock_engine import scan_stocks
 
-DATA_PATH = "antigravity-dashboard/public/results"
+DATA_PATH = "dashboard/public/results"
 
 def run_job():
     os.makedirs(DATA_PATH, exist_ok=True)
