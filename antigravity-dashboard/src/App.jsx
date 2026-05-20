@@ -208,6 +208,9 @@ function App() {
           <TrendingUp className="neon-text" size={32} />
           <div>
             <p className="subtitle">Trend Template Engine</p>
+            <div className="stock-count">
+              {data.length > 0 ? `${data.length.toLocaleString()} stocks` : '0 stocks'}
+            </div>
           </div>
         </div>
 
